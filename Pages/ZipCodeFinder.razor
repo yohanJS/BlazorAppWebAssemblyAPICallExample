@@ -1,0 +1,75 @@
+﻿@page "/zipcodefinder"
+@using BlazorAppWebAssembly.Models
+
+<PageTitle>Zipcode search</PageTitle>
+<h5>Zip Code Finder</h5>
+
+<input class="list-group-item" placeholder="Enter zip code" @bind-value="@ZipCodeToSearch" />
+<button class="btn btn-outline-info mt-2" @onclick="Search">Search</button>
+
+<div class="row mt-2">
+    @if (zipCodePrimaryModel != null && zipCodePrimaryModel.places != null)
+    {
+        <h5>Zip code information found</h5>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Country</th>
+                    <th>Place Name</th>
+                    <th>State</th>
+                    <th>State Abbreviation</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (ListOfPlacesModel item in zipCodePrimaryModel.places)
+                {
+                    <tr>
+                        <td>@zipCodePrimaryModel.country</td>
+                        <td>@item.place_name</td>
+                        <td>@item.state</td>
+                        <td>@item.state_abbreviation</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+    else
+    {
+        <p>no data for now.</p>
+    }
+    <div class="row mt-3">
+        <p>Try one these....</p>
+        <ul class="list-group">
+            <li class="list-group-item">35004</li>
+            <li class="list-group-item">71601</li>
+            <li class="list-group-item">33813</li>
+            <li class="list-group-item">30002</li>
+        </ul>
+    </div>
+
+</div>
+
+
+@code {
+
+    public string strFeedback = string.Empty;
+    public string ZipCodeToSearch = string.Empty;
+    ZipCodePrimaryModel? zipCodePrimaryModel = new ZipCodePrimaryModel();
+
+
+    private async void Search()
+    {
+        try
+        {
+            HttpClient client = new HttpClient();
+            zipCodePrimaryModel = await client.GetFromJsonAsync<ZipCodePrimaryModel>("https://api.zippopotam.us/us/" + ZipCodeToSearch);
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            strFeedback = ex.Message;
+            StateHasChanged();
+        }
+    }
+
+}
