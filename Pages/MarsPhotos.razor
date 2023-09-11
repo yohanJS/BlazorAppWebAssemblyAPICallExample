@@ -1,0 +1,145 @@
+﻿@page "/mars"
+@using BlazorAppWebAssembly.Models
+@inject HttpClient client
+
+<PageTitle>NASA API</PageTitle>
+
+
+<div class="container mb-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <h4 class="mt-4 mb-3">Start finding photos of Mars</h4>
+            <p>Curiosity, Opportunity, and Spirit</p>
+            <form>
+                <div class="mb-3">
+                    <input type="text" class="form-control" placeholder="Curiosity, Opportunity, and Spirit" @bind-value="@RoverName" />
+                </div>
+                <div class="mb-3">
+                    <input type="text" class="form-control" placeholder="Search by sol (1, 5, 25).." @bind-value="@Sol" />
+                </div>
+                <button type="button" class="btn btn-outline-info btn-block" @onclick="Search">Search</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+
+@if (model == null)
+{
+    <p>@ErrorMessage</p>
+}
+else
+{
+    @if (model.rover != null)
+    {
+        <table class="table table-bordered table-striped">
+            <thead>
+                <tr>
+                    <th>Attribute</th>
+                    <th>Value</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Camera</td>
+                    @if (model.camera != null)
+                    {
+                        <td>@model.camera.full_name</td>
+                    }
+                </tr>
+                <tr>
+                    <td>Earth date</td>
+                    <td>@model.earth_date</td>
+                </tr>
+                <tr>
+                    <td>Rover name</td>
+                    <td>@model.rover.name</td>
+                </tr>
+                <tr>
+                    <td>Landing date</td>
+                    <td>@model.rover.landing_date</td>
+                </tr>
+                <tr>
+                    <td>Launch date</td>
+                    <td>@model.rover.launch_date</td>
+                </tr>
+                <tr>
+                    <td>Total photos</td>
+                    <td>@model.rover.total_photos</td>
+                </tr>
+            </tbody>
+        </table>
+        <div class="accordion" id="camerasAccordion">
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="camerasHeader">
+                    <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#camerasCollapse" aria-expanded="true" aria-controls="camerasCollapse">
+                        Rover's Cameras
+                    </button>
+                </h2>
+                <div id="camerasCollapse" class="accordion-collapse collapse" aria-labelledby="camerasHeader" data-bs-parent="#camerasAccordion">
+                    <div class="accordion-body">
+                        <ul>
+                            @if (model.rover.cameras != null)
+                            {
+                                foreach (var camera in model.rover.cameras)
+                                {
+                                    <li class="list-group">@camera.full_name</li>
+                                }
+                            }
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="container mt-3">
+            <div class="row justify-content-center">
+                <div class="col-12">
+                    <img src="@model.img_src" class="img-fluid border border-primary p-3" alt="Sample photo taken with a camera on Mars">
+                    @if (model.camera != null)
+                    {
+                        <p>Sample photo taken with @model.camera.full_name</p>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+}
+
+@code {
+
+    public string BaseUri = "https://api.nasa.gov/mars-photos/api/v1/rovers/";
+    public string ApiKey = "9hImHQqhXffBiL6d3Cw7el1PeHUbYflXUjmnW7wS";
+
+    public string ErrorMessage = string.Empty;
+    public string RoverName = string.Empty;
+    public string? Sol = string.Empty;
+
+    Photos? model = new Photos();
+
+    private async void Search()
+    {
+        try
+        {
+            HttpClient client = new HttpClient();
+            var url = $"{BaseUri}{RoverName}/photos?sol={Sol}&api_key={ApiKey}";
+
+            NasaPhotoModel? AllData = new NasaPhotoModel();
+            AllData = await client.GetFromJsonAsync<NasaPhotoModel>(url);
+
+            if (AllData != null && AllData.photos != null)
+            {
+                model = AllData.photos.FirstOrDefault();
+                StateHasChanged();
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = ex.Message;
+            StateHasChanged();
+        }
+
+    }
+
+}
+
