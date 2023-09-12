@@ -58,10 +58,6 @@ else
                     <td>@sampleResponse.rover.name</td>
                 </tr>
                 <tr>
-                    <td>Earth date</td>
-                    <td>@sampleResponse.earth_date</td>
-                </tr>
-                <tr>
                     <td>Landing date</td>
                     <td>@sampleResponse.rover.landing_date</td>
                 </tr>
@@ -108,7 +104,7 @@ else
             {
                 <div class="carousel-item @(image == images.First() ? "active" : "")">
                     <div class="d-flex flex-column align-items-center">
-                        <img src="@image.img_src" class="img-fluid rounded mx-auto d-block" alt="Image">
+                        <img src="@image.img_src" class="img-fluid rounded mx-auto d-block" alt="Image of Planet Mars and a Rover">
                         <div class="bg-danger text-white text-center mt-2 p-2 rounded">@camera?.full_name</div>
                     </div>
                 </div>
@@ -124,7 +120,6 @@ else
         </button>
     </div>
 }
-
 
 @code {
 
@@ -150,15 +145,7 @@ else
         roverNameEmpty = string.Empty;
         solNumberEmpty = string.Empty;
 
-        if (string.IsNullOrEmpty(roverName))
-        {
-            roverNameEmpty = "A Rover name must be entered.";
-        }
-
-        if (string.IsNullOrEmpty(solNumber))
-        {
-            solNumberEmpty = "A Sol number must be entered.";
-        }
+        ValidateInputFields();
 
         // Check if there are any validation errors
         if (string.IsNullOrEmpty(roverNameEmpty) && string.IsNullOrEmpty(solNumberEmpty))
@@ -202,6 +189,32 @@ else
         solNumber = string.Empty;
         roverNameEmpty = string.Empty;
         solNumberEmpty = string.Empty;
+    }
+    private void ValidateInputFields()
+    {
+        int myInt;
+        var bol = int.TryParse(solNumber, out myInt);
+        if (string.IsNullOrEmpty(roverName))
+        {
+            roverNameEmpty = "A rover name must be entered.";
+        }
+        else if (roverName.Contains(" "))
+        {
+            roverNameEmpty = "No spaces allow for the Rover name input field.";
+        }
+
+        if (string.IsNullOrEmpty(solNumber))
+        {
+            solNumberEmpty = "A Sol number must be entered.";
+        }
+        else if (solNumber.Contains(" "))
+        {
+            solNumberEmpty = "No spaces allow for the sol input field.";
+        }
+        else if (bol == false)
+        {
+            solNumberEmpty = "Sol must be a number.";
+        }
     }
 }
 
