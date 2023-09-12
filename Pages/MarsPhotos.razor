@@ -1,14 +1,14 @@
-﻿@page "/mars"
+﻿@page "/nasaapi"
 @using BlazorAppWebAssembly.Models
 @inject HttpClient client
 
 <PageTitle>NASA API</PageTitle>
 
 
-<div class="container mb-5">
+<div class="container mb-3">
     <div class="row justify-content-center">
-        <div class="col-md-6">
-            <h4 class="mt-4 mb-3">Start finding photos of Mars</h4>
+        <div class="col-md-6 border border-2 p-3 rounded bg-light">
+            <h4 class="mt-3 mb-3">Start finding photos of Mars</h4>
             <p>Curiosity, Opportunity, and Spirit</p>
             <form>
                 <div class="mb-3">
@@ -26,7 +26,11 @@
 
 @if (model == null)
 {
-    <p>@ErrorMessage</p>
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <p class="alert alert-danger" role="alert">@UserMessage</p>
+        </div>
+    </div>
 }
 else
 {
@@ -112,6 +116,7 @@ else
     public string ApiKey = "9hImHQqhXffBiL6d3Cw7el1PeHUbYflXUjmnW7wS";
 
     public string ErrorMessage = string.Empty;
+    public string UserMessage = "No data found. Try another Sol.";
     public string RoverName = string.Empty;
     public string? Sol = string.Empty;
 
