@@ -22,6 +22,8 @@
                 <button type="button" class="btn btn-outline-info btn-block mb-3" @onclick="Search">Search</button>
                 <button type="button" class="btn btn-outline-danger btn-block mb-3" @onclick="ClearFields">Reset</button>
                 <br />
+                <span class="text-primary">@searching</span>
+                <br />
                 <span class="alert-danger rounded m-1" role="alert">@roverNameEmpty</span>
                 <br />
                 <span class="alert-danger rounded m-1" role="alert">@solNumberEmpty</span>
@@ -31,7 +33,7 @@
 </div>
 
 
-@if (response == null)
+@if (sampleResponse == null)
 {
     <div class="row justify-content-center">
         <div class="col-md-6">
@@ -41,7 +43,7 @@
 }
 else
 {
-    @if (response.rover != null)
+    @if (sampleResponse.rover != null)
     {
         <table class="table table-bordered table-striped">
             <thead>
@@ -52,31 +54,24 @@ else
             </thead>
             <tbody>
                 <tr>
-                    <td>Camera</td>
-                    @if (response.camera != null)
-                    {
-                        <td>@response.camera.full_name</td>
-                    }
+                    <td>Rover name</td>
+                    <td>@sampleResponse.rover.name</td>
                 </tr>
                 <tr>
                     <td>Earth date</td>
-                    <td>@response.earth_date</td>
-                </tr>
-                <tr>
-                    <td>Rover name</td>
-                    <td>@response.rover.name</td>
+                    <td>@sampleResponse.earth_date</td>
                 </tr>
                 <tr>
                     <td>Landing date</td>
-                    <td>@response.rover.landing_date</td>
+                    <td>@sampleResponse.rover.landing_date</td>
                 </tr>
                 <tr>
                     <td>Launch date</td>
-                    <td>@response.rover.launch_date</td>
+                    <td>@sampleResponse.rover.launch_date</td>
                 </tr>
                 <tr>
                     <td>Total photos</td>
-                    <td>@response.rover.total_photos</td>
+                    <td>@sampleResponse.rover.total_photos</td>
                 </tr>
             </tbody>
         </table>
@@ -90,9 +85,9 @@ else
                 <div id="camerasCollapse" class="accordion-collapse collapse" aria-labelledby="camerasHeader" data-bs-parent="#camerasAccordion">
                     <div class="accordion-body">
                         <ul>
-                            @if (response.rover.cameras != null)
+                            @if (sampleResponse.rover.cameras != null)
                             {
-                                foreach (var camera in response.rover.cameras)
+                                foreach (var camera in sampleResponse.rover.cameras)
                                 {
                                     <li class="list-group">@camera.full_name</li>
                                 }
@@ -102,28 +97,46 @@ else
                 </div>
             </div>
         </div>
-
-        <div class="container mt-3">
-            <div class="row justify-content-center">
-                <div class="col-12">
-                    <img src="@response.img_src" class="img-fluid border border-primary p-3" alt="Sample photo taken with a camera on Mars">
-                    @if (response.camera != null)
-                    {
-                        <p>Sample photo taken with @response.camera.full_name</p>
-                    }
-                </div>
-            </div>
-        </div>
     }
 }
 
+@if (images.Any() && cameras.Any())
+{
+    <div id="imageCarousel" class="carousel slide mt-3 p-5 bg-dark" data-bs-ride="carousel" data-bs-interval="3000">
+        <div class="carousel-inner">
+            @foreach (var (image, camera) in images.Zip(cameras, (img, cam) => (img, cam)))
+            {
+                <div class="carousel-item @(image == images.First() ? "active" : "")">
+                    <div class="d-flex flex-column align-items-center">
+                        <img src="@image.img_src" class="img-fluid rounded mx-100 d-block" alt="Image">
+                        <div class="bg-danger text-white text-center mt-2 p-2 rounded">@camera?.full_name</div>
+                    </div>
+                </div>
+            }
+        </div>
+        <button class="carousel-control-prev" type="button" data-bs-target="#imageCarousel" data-bs-slide="prev">
+            <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+            <span class="visually-hidden">Previous</span>
+        </button>
+        <button class="carousel-control-next" type="button" data-bs-target="#imageCarousel" data-bs-slide="next">
+            <span class="carousel-control-next-icon" aria-hidden="true"></span>
+            <span class="visually-hidden">Next</span>
+        </button>
+    </div>
+}
+
+
 @code {
 
-    Photos? response = new Photos();
+    Photos? sampleResponse = new Photos();
+    public List<Camera?> cameras = new List<Camera?>();
+    public List<Image> images = new List<Image>();
+
     public string roverName = string.Empty;
     public string? solNumber = string.Empty;
     public string roverNameEmpty = string.Empty;
     public string? solNumberEmpty = string.Empty;
+    public string? searching = string.Empty;
 
     public string baseUri = "https://api.nasa.gov/mars-photos/api/v1/rovers/";
     public string apiKey = "9hImHQqhXffBiL6d3Cw7el1PeHUbYflXUjmnW7wS";
@@ -152,6 +165,7 @@ else
         {
             try
             {
+                searching = "Searching database....";
                 HttpClient client = new HttpClient();
                 var url = $"{baseUri}{roverName}/photos?sol={solNumber}&api_key={apiKey}";
 
@@ -160,7 +174,18 @@ else
 
                 if (AllData != null && AllData.photos != null)
                 {
-                    response = AllData.photos.FirstOrDefault();
+                    images = AllData.photos
+                            .Where(photo => !string.IsNullOrEmpty(photo.img_src))
+                            .Select(photo => new Image { img_src = photo.img_src })
+                            .ToList();
+
+                    sampleResponse = AllData.photos.FirstOrDefault();
+
+                    cameras = AllData.photos.Where(photo => photo.camera != null && (photo.camera.full_name != "Panoramic Camera" || photo.camera.full_name != "Navigation Camera"))
+                                            .Select(photo => photo.camera)
+                                            .ToList();
+
+                    searching = string.Empty;
                     StateHasChanged();
                 }
             }
