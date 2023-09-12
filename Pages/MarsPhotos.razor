@@ -12,29 +12,36 @@
             <p>Curiosity, Opportunity, and Spirit</p>
             <form>
                 <div class="mb-3">
-                    <input type="text" class="form-control" placeholder="Curiosity, Opportunity, and Spirit" @bind-value="@RoverName" />
+                    <label class="form-label">Rover name</label>
+                    <input type="text" class="form-control" placeholder="Curiosity, Opportunity, and Spirit" @bind-value="@roverName" />
                 </div>
                 <div class="mb-3">
-                    <input type="text" class="form-control" placeholder="Search by sol (1, 5, 25).." @bind-value="@Sol" />
+                    <label class="form-label">Sol number</label>
+                    <input type="text" class="form-control" placeholder="Search by sol (1, 5, 25).." @bind-value="@solNumber" />
                 </div>
-                <button type="button" class="btn btn-outline-info btn-block" @onclick="Search">Search</button>
+                <button type="button" class="btn btn-outline-info btn-block mb-3" @onclick="Search">Search</button>
+                <button type="button" class="btn btn-outline-danger btn-block mb-3" @onclick="ClearFields">Reset</button>
+                <br />
+                <span class="alert-danger rounded m-1" role="alert">@roverNameEmpty</span>
+                <br />
+                <span class="alert-danger rounded m-1" role="alert">@solNumberEmpty</span>
             </form>
         </div>
     </div>
 </div>
 
 
-@if (model == null)
+@if (response == null)
 {
     <div class="row justify-content-center">
         <div class="col-md-6">
-            <p class="alert alert-danger" role="alert">@UserMessage</p>
+            <p class="alert alert-danger" role="alert">@userMessage</p>
         </div>
     </div>
 }
 else
 {
-    @if (model.rover != null)
+    @if (response.rover != null)
     {
         <table class="table table-bordered table-striped">
             <thead>
@@ -46,30 +53,30 @@ else
             <tbody>
                 <tr>
                     <td>Camera</td>
-                    @if (model.camera != null)
+                    @if (response.camera != null)
                     {
-                        <td>@model.camera.full_name</td>
+                        <td>@response.camera.full_name</td>
                     }
                 </tr>
                 <tr>
                     <td>Earth date</td>
-                    <td>@model.earth_date</td>
+                    <td>@response.earth_date</td>
                 </tr>
                 <tr>
                     <td>Rover name</td>
-                    <td>@model.rover.name</td>
+                    <td>@response.rover.name</td>
                 </tr>
                 <tr>
                     <td>Landing date</td>
-                    <td>@model.rover.landing_date</td>
+                    <td>@response.rover.landing_date</td>
                 </tr>
                 <tr>
                     <td>Launch date</td>
-                    <td>@model.rover.launch_date</td>
+                    <td>@response.rover.launch_date</td>
                 </tr>
                 <tr>
                     <td>Total photos</td>
-                    <td>@model.rover.total_photos</td>
+                    <td>@response.rover.total_photos</td>
                 </tr>
             </tbody>
         </table>
@@ -83,9 +90,9 @@ else
                 <div id="camerasCollapse" class="accordion-collapse collapse" aria-labelledby="camerasHeader" data-bs-parent="#camerasAccordion">
                     <div class="accordion-body">
                         <ul>
-                            @if (model.rover.cameras != null)
+                            @if (response.rover.cameras != null)
                             {
-                                foreach (var camera in model.rover.cameras)
+                                foreach (var camera in response.rover.cameras)
                                 {
                                     <li class="list-group">@camera.full_name</li>
                                 }
@@ -99,10 +106,10 @@ else
         <div class="container mt-3">
             <div class="row justify-content-center">
                 <div class="col-12">
-                    <img src="@model.img_src" class="img-fluid border border-primary p-3" alt="Sample photo taken with a camera on Mars">
-                    @if (model.camera != null)
+                    <img src="@response.img_src" class="img-fluid border border-primary p-3" alt="Sample photo taken with a camera on Mars">
+                    @if (response.camera != null)
                     {
-                        <p>Sample photo taken with @model.camera.full_name</p>
+                        <p>Sample photo taken with @response.camera.full_name</p>
                     }
                 </div>
             </div>
@@ -112,39 +119,64 @@ else
 
 @code {
 
-    public string BaseUri = "https://api.nasa.gov/mars-photos/api/v1/rovers/";
-    public string ApiKey = "9hImHQqhXffBiL6d3Cw7el1PeHUbYflXUjmnW7wS";
+    Photos? response = new Photos();
+    public string roverName = string.Empty;
+    public string? solNumber = string.Empty;
+    public string roverNameEmpty = string.Empty;
+    public string? solNumberEmpty = string.Empty;
 
-    public string ErrorMessage = string.Empty;
-    public string UserMessage = "No data found. Try another Sol.";
-    public string RoverName = string.Empty;
-    public string? Sol = string.Empty;
+    public string baseUri = "https://api.nasa.gov/mars-photos/api/v1/rovers/";
+    public string apiKey = "9hImHQqhXffBiL6d3Cw7el1PeHUbYflXUjmnW7wS";
 
-    Photos? model = new Photos();
+    public string errorMessage = string.Empty;
+    public string userMessage = "No data found. Try another Sol.";
 
-    private async void Search()
+    private async Task Search()
     {
-        try
+        // Reset error messages
+        roverNameEmpty = string.Empty;
+        solNumberEmpty = string.Empty;
+
+        if (string.IsNullOrEmpty(roverName))
         {
-            HttpClient client = new HttpClient();
-            var url = $"{BaseUri}{RoverName}/photos?sol={Sol}&api_key={ApiKey}";
+            roverNameEmpty = "A Rover name must be entered.";
+        }
 
-            NasaPhotoModel? AllData = new NasaPhotoModel();
-            AllData = await client.GetFromJsonAsync<NasaPhotoModel>(url);
+        if (string.IsNullOrEmpty(solNumber))
+        {
+            solNumberEmpty = "A Sol number must be entered.";
+        }
 
-            if (AllData != null && AllData.photos != null)
+        // Check if there are any validation errors
+        if (string.IsNullOrEmpty(roverNameEmpty) && string.IsNullOrEmpty(solNumberEmpty))
+        {
+            try
             {
-                model = AllData.photos.FirstOrDefault();
+                HttpClient client = new HttpClient();
+                var url = $"{baseUri}{roverName}/photos?sol={solNumber}&api_key={apiKey}";
+
+                NasaPhotoModel? AllData = new NasaPhotoModel();
+                AllData = await client.GetFromJsonAsync<NasaPhotoModel>(url);
+
+                if (AllData != null && AllData.photos != null)
+                {
+                    response = AllData.photos.FirstOrDefault();
+                    StateHasChanged();
+                }
+            }
+            catch (Exception ex)
+            {
+                errorMessage = ex.Message;
                 StateHasChanged();
             }
         }
-        catch (Exception ex)
-        {
-            ErrorMessage = ex.Message;
-            StateHasChanged();
-        }
-
     }
-
+    private void ClearFields()
+    {
+        roverName = string.Empty;
+        solNumber = string.Empty;
+        roverNameEmpty = string.Empty;
+        solNumberEmpty = string.Empty;
+    }
 }
 
